@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1F">
+<title>GOL WMS Móvil</title>
+<script>
+// Fuera de Apps Script (versión web en GitHub Pages) los datos se piden por internet a esta URL de implementación.
+const API_URL = 'https://script.google.com/macros/s/AKfycby1WbjQ88K-tLr50shEX_21P0ZCVsdaXFp4SDfLhkzDkEGNnAeo3hfxZxoi0ZC2WxZI/exec';
+if (typeof google === 'undefined' || !google.script) {
+  window.google = {script: {run: (function makeRunner(ok, fail) {
+    return new Proxy({}, {get: (_, fn) => {
+      if (fn === 'withSuccessHandler') return f => makeRunner(f, fail);
+      if (fn === 'withFailureHandler') return f => makeRunner(ok, f);
+      return (...args) => fetch(API_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({fn, args})})
+        .then(r => r.json())
+        .then(res => { if (!res.ok) throw new Error(res.error); if (ok) ok(res.result); })
+        .catch(err => { if (fail) fail(err); });
+    }});
+  })()}};
+}
+</script>
+<style>
+:root{
+  --bg:#0A0F1F;
+  --bg-2:#0D1428;
+  --surface:#131B2E;
+  --surface-2:#1C2540;
+  --surface-3:#243055;
+  --border:#2A3452;
+  --border-2:#3A4670;
+  --text:#F1F5F9;
+  --text-dim:#94A3B8;
+  --text-mute:#64748B;
+  --primary:#06B6D4;
+  --primary-2:#22D3EE;
+  --primary-glow:rgba(6,182,212,.25);
+  --emerald:#10B981;
+  --emerald-2:#34D399;
+  --amber:#F59E0B;
+  --amber-2:#FBBF24;
+  --rose:#EF4444;
+  --rose-2:#F87171;
+  --violet:#8B5CF6;
+  --violet-2:#A78BFA;
+  --gold:#EAB308;
+  --shadow:0 10px 40px rgba(0,0,0,.5);
+  --shadow-glow:0 0 30px rgba(16,185,129,.15);
+  --radius:16px;
+  --radius-sm:10px;
+  --header-h:60px;
+  --nav-h:66px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.4;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+body{padding-top:calc(var(--header-h) + env(safe-area-inset-top));padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);min-height:100vh;background-image:radial-gradient(ellipse at top,rgba(6,182,212,.06),transparent 50%),radial-gradient(ellipse at bottom,rgba(139,92,246,.04),transparent 50%);background-attachment:fixed}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;width:100%;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Header */
+.appbar{position:fixed;top:0;left:0;right:0;height:calc(var(--header-h) + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);background:linear-gradient(180deg,rgba(10,15,31,.95),rgba(10,15,31,.85));backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--border);display:flex;align-items:center;padding-left:16px;padding-right:12px;z-index:100}
+.brand{display:flex;align-items:center;gap:11px;flex:1}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--violet));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;letter-spacing:.5px;box-shadow:0 4px 12px rgba(6,182,212,.35)}
+.brand-text .title{font-weight:800;font-size:15px;letter-spacing:-.2px;line-height:1}
+.brand-text .sub{font-size:9.5px;color:var(--text-dim);font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+.top-actions{display:flex;gap:4px}
+.icon-btn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);transition:background .15s,color .15s;position:relative}
+.icon-btn:active{background:var(--surface-2);color:var(--text)}
+.icon-btn .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald)}
+.icon-btn .dot.stale{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.icon-btn .dot.error{background:var(--rose);box-shadow:0 0 8px var(--rose)}
+.icon-btn.spinning svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Container */
+.container{max-width:900px;margin:0 auto;padding:14px}
+.view{display:none;animation:fade .2s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Loading / empty */
+.loading-overlay{position:fixed;inset:0;background:rgba(10,15,31,.85);display:flex;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(8px)}
+.spinner{width:44px;height:44px;border:3px solid var(--surface-2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+.empty{text-align:center;padding:70px 20px;color:var(--text-dim)}
+.empty svg{opacity:.25;margin-bottom:16px}
+.empty h3{margin:0 0 8px;color:var(--text);font-size:17px;font-weight:700}
+.empty p{margin:0;font-size:13px;line-height:1.6}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-bottom:20px}
+.kpi{background:linear-gradient(135deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--primary)}
+.kpi.emerald::before{background:var(--emerald)}
+.kpi.amber::before{background:var(--amber)}
+.kpi.rose::before{background:var(--rose)}
+.kpi.violet::before{background:var(--violet)}
+.kpi .label{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.kpi .value{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:11px;color:var(--text-mute);margin-top:6px;font-weight:500}
+.kpi.emerald .value{color:var(--emerald-2)}
+.kpi.amber .value{color:var(--amber-2)}
+.kpi.rose .value{color:var(--rose-2)}
+.kpi.violet .value{color:var(--violet-2)}
+.kpi .value.primary{color:var(--primary-2)}
+
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);font-weight:800;margin:22px 6px 10px;display:flex;align-items:center;gap:10px}
+.section-title .badge-count{background:var(--surface-2);padding:3px 10px;border-radius:12px;color:var(--text);font-weight:700;font-size:11px;letter-spacing:.5px}
+
+/* Search sticky */
+.search-wrap{position:sticky;top:calc(var(--header-h) + env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg) 60%,transparent);padding:12px 0 8px;z-index:50;margin:-14px 0 0}
+.search-row{position:relative}
+.search-row input{padding-left:44px;padding-right:16px;background:var(--surface);border-radius:14px;height:48px;font-size:15px}
+.search-row .search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-mute);pointer-events:none}
+.search-row .clear-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--text-dim);display:none;align-items:center;justify-content:center}
+.search-row.has-value .clear-btn{display:flex}
+
+.filters{display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:7px 13px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s}
+.chip:active{transform:scale(.95)}
+.chip.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 12px var(--primary-glow)}
+.chip.amber.active{background:var(--amber);border-color:var(--amber);color:#0A0F1F}
+.chip.rose.active{background:var(--rose);border-color:var(--rose)}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:transform .12s,border-color .15s;cursor:pointer}
+.card:active{transform:scale(.99)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card-head .code{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--primary-2);letter-spacing:.3px;background:rgba(6,182,212,.1);padding:3px 8px;border-radius:6px;display:inline-block}
+.card-name{font-size:13.5px;color:var(--text);margin-top:8px;line-height:1.4;font-weight:600}
+.card-head .qty{font-size:24px;font-weight:800;letter-spacing:-.8px;text-align:right;flex-shrink:0;line-height:1;font-variant-numeric:tabular-nums;color:var(--text)}
+.card-head .qty .unit{font-size:11px;color:var(--text-mute);font-weight:500;margin-left:3px;letter-spacing:0}
+.card-meta{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+
+.badge{font-size:10.5px;padding:4px 9px;border-radius:8px;background:var(--surface-2);color:var(--text-dim);font-weight:700;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;line-height:1}
+.badge.whs{background:rgba(139,92,246,.15);color:var(--violet-2);border-color:rgba(139,92,246,.3)}
+.badge.approved{background:rgba(16,185,129,.15);color:var(--emerald-2);border-color:rgba(16,185,129,.3)}
+.badge.quarantine{background:rgba(245,158,11,.15);color:var(--amber-2);border-color:rgba(245,158,11,.3)}
+.badge.expired{background:rgba(239,68,68,.2);color:var(--rose-2);border-color:rgba(239,68,68,.45);font-weight:800}
+.badge.exp-near{background:rgba(239,68,68,.15);color:var(--rose-2);border-color:rgba(239,68,68,.35)}
+.badge.exp-warn{background:rgba(245,158,11,.15);color:var(--amber-2);border-color:rgba(245,158,11,.3)}
+.badge.exp-ok{background:rgba(16,185,129,.12);color:var(--emerald-2);border-color:rgba(16,185,129,.25)}
+.badge.count{background:rgba(6,182,212,.12);color:var(--primary-2);border-color:rgba(6,182,212,.25)}
+
+/* FIFO Recommendation Panel (star of the show) */
+.fifo-panel{background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(6,182,212,.12));border:1.5px solid var(--emerald);border-radius:var(--radius);padding:16px;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:var(--shadow-glow)}
+.fifo-panel::before{content:"";position:absolute;top:-30%;right:-10%;width:200px;height:200px;background:radial-gradient(circle,rgba(16,185,129,.25),transparent 60%);pointer-events:none}
+.fifo-panel .fifo-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;color:var(--emerald-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.fifo-panel .fifo-label .pulse{width:9px;height:9px;border-radius:50%;background:var(--emerald);animation:pulseDot 1.5s infinite}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}70%{box-shadow:0 0 0 10px transparent}}
+.fifo-lot-box{background:rgba(0,0,0,.35);border:1.5px solid var(--emerald);border-radius:12px;padding:12px 14px;margin:8px 0 12px;position:relative;z-index:1}
+.fifo-lot-box .lot-tag{font-size:10px;font-weight:800;color:var(--emerald-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.fifo-lot-box .lot-num{font-family:var(--mono);font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;line-height:1;word-break:break-all}
+.fifo-lot-box.missing{border-color:var(--amber);background:rgba(245,158,11,.12)}
+.fifo-lot-box.missing .lot-tag{color:var(--amber-2)}
+.fifo-lot-box.missing .lot-num{font-size:16px;color:var(--amber-2);font-family:var(--font)}
+.fifo-panel .fifo-details{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;position:relative;z-index:1}
+.fifo-panel .fifo-details > div{font-size:11px;color:var(--text-dim)}
+.fifo-panel .fifo-details strong{display:block;color:#fff;font-size:15px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.card-lot{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--emerald-2);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);padding:4px 9px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;letter-spacing:.3px}
+.card-lot.missing{color:var(--amber-2);background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3)}
+
+/* Resumen FIFO — vista rápida en tabla */
+.fifo-summary{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.fifo-summary-head{background:linear-gradient(90deg,rgba(16,185,129,.15),rgba(6,182,212,.08));padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fifo-summary-head .t{font-size:11px;font-weight:800;color:var(--emerald-2);text-transform:uppercase;letter-spacing:1.5px}
+.fifo-summary-head .totals{display:flex;gap:14px;align-items:baseline}
+.fifo-summary-head .totals .val{font-size:20px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+.fifo-summary-head .totals .lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.fifo-table{width:100%;font-size:12.5px;border-collapse:collapse}
+.fifo-table thead th{background:var(--surface-2);color:var(--text-dim);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:1px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0}
+.fifo-table thead th.num{text-align:right}
+.fifo-table tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.fifo-table tbody tr:last-child td{border-bottom:0}
+.fifo-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+.fifo-table .rank-cell{width:34px;text-align:center;font-weight:800;font-family:var(--mono);color:var(--text-dim);font-size:12px}
+.fifo-table tr.top-1 .rank-cell{color:var(--emerald-2)}
+.fifo-table tr.top-1{background:rgba(16,185,129,.06)!important;box-shadow:inset 3px 0 0 var(--emerald)}
+.fifo-table tr.top-2{box-shadow:inset 3px 0 0 var(--primary)}
+.fifo-table tr.top-3{box-shadow:inset 3px 0 0 var(--violet)}
+.fifo-table .date-cell{font-family:var(--mono);color:var(--text);font-weight:700;font-size:12.5px;white-space:nowrap}
+.fifo-table .date-cell .days{display:block;font-size:10px;color:var(--text-dim);font-family:var(--font);font-weight:500;margin-top:2px}
+.fifo-table .date-cell .days.expired{color:var(--rose-2)}
+.fifo-table .date-cell .days.near{color:var(--rose-2)}
+.fifo-table .date-cell .days.warn{color:var(--amber-2)}
+.fifo-table .lot-cell{font-family:var(--mono);color:var(--emerald-2);font-weight:700;letter-spacing:.3px;word-break:break-all;font-size:13px}
+.fifo-table .lot-cell.missing{color:var(--amber-2);font-family:var(--font);font-style:italic;font-size:11px}
+.fifo-table .whs-cell{color:var(--text-dim);font-size:11px;font-weight:600}
+.fifo-table .qty-cell{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;white-space:nowrap;font-size:14px}
+.fifo-table .qty-cell .u{font-size:9.5px;color:var(--text-mute);font-weight:500;margin-left:2px}
+.fifo-summary-foot{background:var(--surface-2);padding:10px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim)}
+.fifo-summary-foot strong{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Lot list inside detail */
+.lot{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:12px 14px;background:var(--surface-2);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--border);align-items:center;transition:transform .1s}
+.lot:active{transform:scale(.99)}
+.lot.rank-1{border-left-color:var(--emerald);background:linear-gradient(90deg,rgba(16,185,129,.1),var(--surface-2) 60%)}
+.lot.rank-2{border-left-color:var(--primary)}
+.lot.rank-3{border-left-color:var(--violet)}
+.lot .rank{width:28px;height:28px;border-radius:8px;background:var(--surface-3);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+.lot.rank-1 .rank{background:var(--emerald);color:#fff;box-shadow:0 4px 10px rgba(16,185,129,.4)}
+.lot.rank-2 .rank{background:var(--primary);color:#fff}
+.lot.rank-3 .rank{background:var(--violet);color:#fff}
+.lot .lot-info{min-width:0}
+.lot .lot-code{font-family:var(--mono);font-weight:700;color:var(--text);font-size:13px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lot .lot-sub{font-size:10.5px;color:var(--text-dim);display:flex;gap:8px;flex-wrap:wrap}
+.lot .lot-sub span strong{color:var(--text);font-weight:700}
+.lot .lot-qty{text-align:right;flex-shrink:0}
+.lot .lot-qty-num{font-size:18px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.lot .lot-qty-unit{font-size:10px;color:var(--text-mute);font-weight:600;margin-top:2px}
+.lot .lot-exp{margin-top:6px}
+
+/* Modal / Detail */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}
+.modal.show{display:flex;animation:fade .2s ease}
+.modal-card{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:900px;max-height:92vh;overflow-y:auto;padding:20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:slideUp .28s cubic-bezier(.2,.9,.3,1);position:relative;border-top:1px solid var(--border)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.modal-drag{width:40px;height:4px;background:var(--border-2);border-radius:2px;margin:-8px auto 14px}
+.modal-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:var(--surface-2);color:var(--text-dim);display:flex;align-items:center;justify-content:center;z-index:2}
+.detail-head .code{font-family:var(--mono);color:var(--primary-2);font-weight:700;font-size:13px;background:rgba(6,182,212,.1);padding:4px 10px;border-radius:6px;display:inline-block}
+.detail-head h3{margin:8px 0 4px;font-size:17px;line-height:1.35}
+.stat-row{display:flex;gap:24px;margin:12px 0 6px}
+.stat-row .stat .label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.stat-row .stat .value{font-size:26px;font-weight:800;margin-top:4px;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.stat-row .stat .value .unit{font-size:11px;color:var(--text-mute);margin-left:4px;font-weight:500}
+.dist-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--surface-2);margin:12px 0 8px}
+.dist-seg{height:100%}
+.dist-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;margin-top:2px}
+.dist-legend span{color:var(--text-dim);display:flex;align-items:center;gap:5px}
+.dist-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+/* Update view */
+.update-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px}
+.update-card h3{margin:0 0 6px;font-size:15px;font-weight:800}
+.update-card p{color:var(--text-dim);font-size:12.5px;margin:0 0 14px;line-height:1.6}
+.btn{padding:12px 18px;background:var(--primary);color:#fff;border-radius:var(--radius-sm);font-weight:700;font-size:13.5px;flex:1;transition:transform .1s,box-shadow .15s;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:scale(.98)}
+.btn.emerald{background:var(--emerald)}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:var(--rose)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.link{color:var(--primary-2);text-decoration:none;font-weight:600;border-bottom:1px dashed var(--primary-2);padding-bottom:1px}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;padding-bottom:env(safe-area-inset-bottom);background:rgba(10,15,31,.95);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);display:flex;z-index:100;height:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text-mute);font-size:10.5px;font-weight:700;transition:color .15s;padding:8px 4px;position:relative}
+.bottom-nav button.active{color:var(--primary-2)}
+.bottom-nav button.active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:32px;height:2.5px;background:var(--primary);border-radius:0 0 3px 3px}
+.bottom-nav svg{width:22px;height:22px}
+.bottom-nav button.nav-scan::before{display:none}
+.bottom-nav .fab{width:56px;height:56px;border-radius:18px;margin-top:-30px;background:linear-gradient(135deg,var(--primary),var(--violet));color:#fff;display:flex;align-items:center;justify-content:center;border:4px solid var(--bg);box-shadow:0 8px 24px rgba(6,182,212,.45)}
+.bottom-nav .fab svg{width:26px;height:26px}
+.bottom-nav button.nav-scan.active .fab{box-shadow:0 0 0 3px var(--primary-glow),0 8px 24px rgba(6,182,212,.6)}
+
+/* Escáner */
+.scan-stage{position:relative;aspect-ratio:4/3;background:#000;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);transition:box-shadow .2s}
+.scan-stage.hit{box-shadow:0 0 0 4px var(--emerald)}
+.scan-stage.miss{box-shadow:0 0 0 4px var(--rose)}
+#camVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scan-stage{margin-bottom:12px}
+.scan-stage .torch{position:absolute;top:10px;right:10px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);font-size:20px;display:flex;align-items:center;justify-content:center}
+.scan-stage .torch.on{background:var(--amber)}
+.scan-window{position:absolute;left:7%;right:7%;top:30%;height:40%;border-radius:12px;box-shadow:0 0 0 9999px rgba(10,15,31,.5);pointer-events:none}
+.scan-window i{position:absolute;width:28px;height:28px;border:0 solid var(--primary-2)}
+.scan-window i:nth-child(1){top:-2px;left:-2px;border-width:3px 0 0 3px;border-top-left-radius:12px}
+.scan-window i:nth-child(2){top:-2px;right:-2px;border-width:3px 3px 0 0;border-top-right-radius:12px}
+.scan-window i:nth-child(3){bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-bottom-left-radius:12px}
+.scan-window i:nth-child(4){bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-bottom-right-radius:12px}
+.scan-window .laser{position:absolute;left:4%;right:4%;height:2px;background:linear-gradient(90deg,transparent,var(--rose-2),transparent);box-shadow:0 0 12px var(--rose);animation:laser 1.8s ease-in-out infinite}
+@keyframes laser{0%,100%{top:12%}50%{top:86%}}
+.scan-main{display:flex;flex-direction:column;align-items:center;gap:6px;padding:28px 16px;border-radius:var(--radius);background:linear-gradient(135deg,var(--primary),var(--violet));color:#fff;cursor:pointer;box-shadow:0 10px 30px rgba(6,182,212,.35);text-align:center;transition:transform .1s}
+.scan-main:active{transform:scale(.98)}
+.scan-main{width:100%;border:0;font-family:inherit}
+.scan-main.on{padding:12px;background:var(--surface-2);border:1px solid var(--border);box-shadow:none}
+.scan-main.on svg,.scan-main.on .s{display:none}
+.scan-main.on .t{font-size:14px}
+.scan-main .t{font-size:19px;font-weight:800;letter-spacing:.2px}
+.scan-main .s{font-size:12px;opacity:.9}
+.scan-hint{margin:10px 4px 14px;font-size:12.5px;font-weight:600;color:var(--text-dim);text-align:center}
+.scan-hint.err{color:var(--rose-2)}
+.scan-actions{display:flex;gap:8px;margin:12px 0}
+.scan-actions .btn{padding:11px 10px;font-size:12.5px}
+
+
+/* Toast */
+.toast{position:fixed;top:calc(var(--header-h) + env(safe-area-inset-top) + 14px);left:50%;transform:translateX(-50%) translateY(-12px);background:var(--surface);border:1px solid var(--border);padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow);z-index:400;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100% - 24px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--emerald);color:var(--emerald-2)}
+.toast.error{border-color:var(--rose);color:var(--rose-2)}
+
+@media(min-width:640px){
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <div class="logo">GOL</div>
+    <div class="brand-text">
+      <div class="title">WMS Móvil</div>
+      <div class="sub">Stock · FIFO · Consulta</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" id="statusBtn" title="Estado datos">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="dot" id="statusDot"></span>
+    </button>
+    <button class="icon-btn" id="refreshBtn" title="Recargar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"/><path d="M3 21v-5h5"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dash">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="section-title" id="alertsTitle">⚠ Alertas de vencimiento <span class="badge-count" id="alertCount">0</span></div>
+    <div id="alertsList"></div>
+  </section>
+
+  <!-- BUSCAR (con FIFO integrado) -->
+  <section class="view" id="view-search">
+    <div class="search-wrap">
+      <div class="search-row" id="searchRow">
+        <svg class="search-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar SKU, lote o descripción…" autocomplete="off">
+        <button class="clear-btn" id="clearSearchBtn">✕</button>
+      </div>
+      <div class="filters" id="filterChips"></div>
+    </div>
+    <div id="searchResults"></div>
+  </section>
+
+  <!-- FIFO/FEFO puro -->
+  <!-- ESCÁNER -->
+  <section class="view" id="view-scan">
+    <div class="scan-stage" id="scanStage" style="display:none">
+      <video id="camVideo" playsinline muted autoplay></video>
+      <div class="scan-window"><i></i><i></i><i></i><i></i><span class="laser"></span></div>
+      <button class="torch" id="torchBtn" style="display:none" title="Linterna">🔦</button>
+    </div>
+    <button class="scan-main" id="camToggle">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8"/></svg>
+      <span class="t">Iniciar escáner</span>
+      <span class="s">Pasa el láser sobre el código · lectura automática</span>
+    </button>
+    <div class="scan-hint" id="scanHint">Apunta al código de barras en horizontal</div>
+    <div class="scan-actions">
+      <label class="btn ghost" for="photoInput" style="cursor:pointer">📸 Leer desde una foto</label>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+    <div class="update-card">
+      <h3 style="font-size:13px">🔫 Pistola lectora o código manual</h3>
+      <p style="font-size:12px;margin:0 0 10px">Con pistola USB/Bluetooth solo dispara: la app lee el código aunque no toques ningún campo. También puedes escribir SKU, lote o EAN y pulsar Enter.</p>
+      <input type="text" id="wedgeInput" placeholder="SKU, lote, EAN o código GS1…" autocomplete="off" autocapitalize="characters">
+    </div>
+  </section>
+
+  <section class="view" id="view-fifo">
+    <div class="update-card" id="fifoIntro" style="padding:12px 14px;margin-bottom:12px;border-color:var(--emerald)">
+      <p style="margin:0;font-size:12.5px">🏭 <strong style="color:var(--emerald-2)" id="fifoIntroTitle">Bodega principal — lote a despachar primero por SKU</strong>. Orden FIFO: primero lo que ingresó, primero sale. Solo SKUs con stock en tu bodega.</p>
+    </div>
+    <div class="search-wrap" style="position:relative;top:0;margin:0 0 10px;padding:0">
+      <div class="search-row">
+        <svg class="search-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="fifoSearch" placeholder="Filtrar por SKU o descripción…">
+      </div>
+    </div>
+    <div id="fifoList"></div>
+  </section>
+
+  <!-- ACTUALIZAR -->
+  <section class="view" id="view-update">
+    <div class="update-card" style="border:2px solid var(--emerald);background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(6,182,212,.06))">
+      <h3 style="color:var(--emerald-2);display:flex;align-items:center;gap:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Cargar Excel automáticamente
+      </h3>
+      <p>Selecciona tu archivo <strong>SAP TIEMPO REAL.xlsx</strong> (o cualquier .xlsx/.xls/.csv) desde el PC o el celular. La app lo lee, sobrescribe la hoja de Google Sheets y refresca todo — en 3 segundos tienes el stock actualizado.</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv" style="display:none">
+      <label for="fileInput" class="btn emerald" style="width:100%;padding:16px;font-size:15px;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        Elegir archivo Excel
+      </label>
+      <div id="uploadStatus" style="margin-top:12px;font-size:12.5px;color:var(--text-dim);display:none"></div>
+    </div>
+
+    <div class="update-card" style="border-color:var(--violet);background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(139,92,246,.02))">
+      <h3 style="color:var(--violet-2);display:flex;align-items:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+        Cargar unidades de medida (una sola vez)
+      </h3>
+      <p>Sube el archivo maestro <strong>unidad de medida.xlsx</strong> para que cada SKU muestre su unidad correcta (kg, L, m, cj×12, etc.) en vez de asumir "unidades". Se guarda en la hoja UOM.</p>
+      <input type="file" id="uomFileInput" accept=".xlsx,.xls,.xlsm,.csv" style="display:none">
+      <label for="uomFileInput" class="btn" style="width:100%;background:var(--violet);cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 12 12 15 15"/></svg>
+        Elegir archivo de unidades
+      </label>
+      <div id="uomStatus" style="margin-top:10px;font-size:12.5px;color:var(--text-dim);display:none"></div>
+    </div>
+
+    <div class="update-card">
+      <h3>📊 Estado actual</h3>
+      <p id="dataInfo" style="margin:0 0 12px">Cargando…</p>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="openSheet()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          Abrir Hoja
+        </button>
+        <button class="btn" id="forceRefreshBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"/><path d="M21 3v5h-5"/></svg>
+          Recargar
+        </button>
+      </div>
+    </div>
+
+    <div class="update-card" style="border-color:var(--rose);background:rgba(239,68,68,.05)">
+      <h3 style="color:var(--rose-2);display:flex;align-items:center;gap:6px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+        Eliminar todos los datos
+      </h3>
+      <p>Borra por completo el stock actual de la hoja para asegurarte de arrancar limpio antes de una carga nueva. <strong>Esta acción no se puede deshacer.</strong></p>
+      <button class="btn danger" id="clearAllBtn" style="width:100%">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Eliminar todos los datos ahora
+      </button>
+      <div id="clearStatus" style="margin-top:10px;font-size:12.5px;display:none"></div>
+    </div>
+
+    <div class="update-card">
+      <h3 style="font-size:13px;color:var(--text-dim)">📋 Alternativa manual (opcional)</h3>
+      <p style="font-size:12px;margin:0">Si prefieres, también puedes pegar directamente: abre la <a class="link" href="javascript:void(0)" onclick="openSheet()">hoja STOCK</a>, borra desde fila 2 y pega con Ctrl+V.</p>
+    </div>
+
+    <div class="update-card">
+      <h3 style="font-size:13px;color:var(--text-dim)">📱 Instalar en el celular</h3>
+      <p style="font-size:12px;margin:0"><strong>Android/Chrome:</strong> menú (⋮) → "Añadir a la pantalla de inicio"<br>
+      <strong>iPhone/Safari:</strong> compartir (⬆) → "Añadir a la pantalla de inicio"</p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="active" data-view="dash">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>
+    Inicio
+  </button>
+  <button data-view="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    Consultar
+  </button>
+  <button class="nav-scan" data-view="scan">
+    <span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8"/></svg></span>
+    Escanear
+  </button>
+  <button data-view="fifo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+    FIFO
+  </button>
+  <button data-view="update">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Actualizar
+  </button>
+</nav>
+
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="modal-card" id="modalCard"></div></div>
+
+<script>
+(function(){
+  'use strict';
+  // ============ CONFIGURACIÓN ============
+  // Bodega principal: FIFO se calcula SOLO con lotes de esta bodega.
+  const HOME_WHS = '02';
+  // Nombres cortos de bodegas (Golderie / Cersa)
+  const WHS_NAMES = {
+    '01': 'Logística La Mancha',
+    '02': 'Logística Calacalí',
+    '03': 'La Mancha',
+    '04': 'Producción La Mancha',
+    '05': 'Producción Calacalí',
+    '06': 'No Conformes',
+    '07': 'Cuarentenados',
+    '08': 'El Inca',
+    '09': 'Otros Proveedores',
+    '10': 'Ajustes',
+    '11': 'Pronaca',
+    '12': 'Arcamia',
+    '13': 'Autoservicios',
+    '99': 'Importaciones'
+  };
+  const whsName = c => WHS_NAMES[String(c).padStart(2,'0')] || WHS_NAMES[String(c)] || '';
+  const whsLabel = c => {
+    const n = whsName(c);
+    const code = /^\d$/.test(String(c)) ? '0' + c : c;
+    return n ? code + ' · ' + n : 'Bod ' + code;
+  };
+  // Abreviatura corta y estándar de la unidad de medida
+  const uomShort = raw => {
+    const u = String(raw||'').toUpperCase().trim();
+    if(!u) return 'u';
+    if(/^UNIDAD$|^UND$|^UN$|^UNI$/.test(u)) return 'u';
+    if(/^KG$|^KILO/.test(u)) return 'kg';
+    if(/^LT$|^L$|^LITRO/.test(u)) return 'L';
+    if(/^METRO|^M$|^MT$/.test(u)) return 'm';
+    if(/^CJX?(\d+)$/.test(u)){ const m=u.match(/^CJX?(\d+)$/); return 'cj×'+m[1]; }
+    if(/^CAJA/.test(u)) return 'cj';
+    if(/^GR$|^GRAMO/.test(u)) return 'g';
+    if(/^ML$/.test(u)) return 'ml';
+    return u.length > 4 ? u.substring(0,4).toLowerCase() : u.toLowerCase();
+  };
+  // =======================================
+  let DATA = [];
+  let META = {updatedAt:null, count:0};
+  let SHEET_URL = '';
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const fmt = n => (typeof n === 'number' ? n.toLocaleString('es-EC') : n);
+  const escapeHtml = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const parseDate = s => {
+    if(!s) return null;
+    const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(!m) return null;
+    const d = new Date(+m[1], +m[2]-1, +m[3]);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const daysUntil = d => d ? Math.floor((d - new Date()) / 86400000) : null;
+  const expStatus = d => {
+    const days = daysUntil(d);
+    if(days === null) return {cls:'', label:'Sin fecha', days:null};
+    if(days < 0) return {cls:'expired', label:'Vencido hace '+Math.abs(days)+'d', days};
+    if(days <= 30) return {cls:'exp-near', label:'Vence en '+days+'d', days};
+    if(days <= 90) return {cls:'exp-warn', label:'Vence en '+days+'d', days};
+    return {cls:'exp-ok', label:'Vence en '+days+'d', days};
+  };
+  const stateBadge = s => {
+    if(!s) return '';
+    const c = s.toLowerCase().includes('aprob') ? 'approved' : (s.toLowerCase().includes('cuaren') ? 'quarantine' : '');
+    return '<span class="badge '+c+'">'+escapeHtml(s)+'</span>';
+  };
+  function toast(msg, type){
+    const t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type||'');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.className = 'toast ' + (type||''), 2800);
+  }
+  function showLoading(v){ $('#loadingOverlay').style.display = v ? 'flex' : 'none' }
+
+  // ---------- Data fetch ----------
+  function loadData(force){
+    showLoading(true);
+    const call = force ? google.script.run.withSuccessHandler(onData).withFailureHandler(onErr).refreshCache()
+                        : google.script.run.withSuccessHandler(onData).withFailureHandler(onErr).getStock(false);
+  }
+  let SKU_LIST = [];
+  function onData(payload){
+    DATA = payload.rows || [];
+    META = {updatedAt: payload.updatedAt, count: payload.count};
+    SKU_LIST = Array.from(new Set(DATA.map(r => String(r.ItemCode).toUpperCase()))).sort((a,b) => b.length - a.length);
+    render();
+    updateStatus();
+    showLoading(false);
+  }
+  function onErr(err){
+    showLoading(false);
+    toast('Error al cargar: ' + (err && err.message ? err.message : err), 'error');
+    $('#statusDot').className = 'dot error';
+  }
+
+  // ---------- Render ----------
+  function render(){
+    renderKpis();
+    renderFilterChips();
+    runSearch();
+    renderFifo();
+    updateDataInfo();
+  }
+
+  function renderKpis(){
+    const isHome = w => String(w).padStart(2,'0') === HOME_WHS || String(w) === HOME_WHS;
+    const homeData = DATA.filter(r => isHome(r.WhsCode));
+    const skusHome = new Set();
+    let unitsHome = 0, expNearHome = 0, expiredHome = 0, quarantineHome = 0;
+    for(const r of homeData){
+      skusHome.add(r.ItemCode);
+      unitsHome += Number(r.Quantity)||0;
+      const st = expStatus(parseDate(r.ExpDate));
+      if(st.days !== null && st.days < 0) expiredHome++;
+      else if(st.days !== null && st.days <= 30) expNearHome++;
+      if((r.State||'').toLowerCase().includes('cuaren')) quarantineHome++;
+    }
+    const homeShort = whsName(HOME_WHS) || ('Bod '+HOME_WHS);
+    $('#kpiGrid').innerHTML = [
+      '<div class="kpi emerald"><div class="label">Stock '+escapeHtml(homeShort)+' ★</div><div class="value">'+fmt(Math.round(unitsHome))+'</div><div class="sub">'+fmt(skusHome.size)+' SKUs · '+fmt(homeData.length)+' lotes</div></div>',
+      '<div class="kpi"><div class="label">Todas las bodegas</div><div class="value primary">'+fmt(Math.round(DATA.reduce((a,r)=>a+(Number(r.Quantity)||0),0)))+'</div><div class="sub">'+fmt(DATA.length)+' lotes totales</div></div>',
+      '<div class="kpi rose"><div class="label">Por vencer '+escapeHtml(homeShort)+'</div><div class="value">'+fmt(expNearHome)+'</div><div class="sub">'+fmt(expiredHome)+' ya vencidos</div></div>',
+      '<div class="kpi amber"><div class="label">Cuarentena '+escapeHtml(homeShort)+'</div><div class="value">'+fmt(quarantineHome)+'</div><div class="sub">requieren revisión</div></div>'
+    ].join('');
+
+    const alerts = homeData.map(r => ({r, st:expStatus(parseDate(r.ExpDate))}))
+      .filter(x => x.st.days !== null && x.st.days <= 30)
+      .sort((a,b) => (a.st.days||0) - (b.st.days||0))
+      .slice(0, 15);
+    $('#alertCount').textContent = alerts.length;
+    $('#alertsList').innerHTML = alerts.length ? alerts.map(x => renderLotCard(x.r, x.st)).join('')
+      : '<div class="empty" style="padding:30px"><p>👌 Sin alertas críticas en Bodega '+HOME_WHS+'</p></div>';
+  }
+
+  function renderLotCard(r, st){
+    st = st || expStatus(parseDate(r.ExpDate));
+    return '<div class="card" onclick="openDetail(\''+escapeAttr(r.ItemCode)+'\')">'+
+      '<div class="card-head"><div style="min-width:0"><span class="code">'+escapeHtml(r.ItemCode)+'</span>'+
+      '<div class="card-name">'+escapeHtml(r.ItemName)+'</div></div>'+
+      '<div class="qty">'+fmt(r.Quantity)+'<span class="unit">'+uomShort(r.UoM)+'</span></div></div>'+
+      '<div class="card-meta">'+
+        '<span class="badge whs">'+escapeHtml(whsLabel(r.WhsCode))+'</span>'+
+        '<span class="badge">Lote '+escapeHtml(r.BatchNum)+'</span>'+
+        '<span class="badge '+st.cls+'">'+st.label+'</span>'+
+        stateBadge(r.State)+
+      '</div></div>';
+  }
+
+  function escapeAttr(s){return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+
+  // ---------- Search + FIFO integrated in detail ----------
+  const filterState = {q:'', whs:null, state:null, exp:null};
+
+  function renderFilterChips(){
+    const whs = Array.from(new Set(DATA.map(r=>r.WhsCode).filter(Boolean))).sort();
+    const chips = [
+      {k:'exp', v:'near', label:'⚠ Por vencer', cls:'amber'},
+      {k:'exp', v:'expired', label:'✕ Vencidos', cls:'rose'},
+      {k:'state', v:'Cuarentenado', label:'Cuarentena', cls:'amber'},
+      {k:'state', v:'Aprobado', label:'Aprobado', cls:''}
+    ].concat(whs.map(w => ({k:'whs', v:w, label:whsLabel(w), cls:''})));
+    $('#filterChips').innerHTML = chips.map(c => {
+      const active = filterState[c.k] === c.v;
+      return '<button class="chip '+c.cls+(active?' active':'')+'" data-k="'+c.k+'" data-v="'+escapeAttr(c.v)+'">'+c.label+'</button>';
+    }).join('');
+  }
+
+  function runSearch(){
+    const q = filterState.q.trim().toLowerCase();
+    let rows = DATA;
+    if(q) rows = rows.filter(r =>
+      (r.ItemCode||'').toLowerCase().includes(q) ||
+      (r.BatchNum||'').toLowerCase().includes(q) ||
+      (r.ItemName||'').toLowerCase().includes(q)
+    );
+    if(filterState.whs) rows = rows.filter(r => r.WhsCode === filterState.whs);
+    if(filterState.state) rows = rows.filter(r => (r.State||'') === filterState.state);
+    if(filterState.exp === 'near') rows = rows.filter(r => {const st=expStatus(parseDate(r.ExpDate));return st.days!==null && st.days>=0 && st.days<=30});
+    if(filterState.exp === 'expired') rows = rows.filter(r => {const st=expStatus(parseDate(r.ExpDate));return st.days!==null && st.days<0});
+
+    const bySku = new Map();
+    for(const r of rows){
+      let s = bySku.get(r.ItemCode);
+      if(!s){s = {ItemCode:r.ItemCode, ItemName:r.ItemName, lots:[], totalQty:0, whs:new Set()}; bySku.set(r.ItemCode, s)}
+      s.lots.push(r); s.totalQty += Number(r.Quantity)||0;
+      if(r.WhsCode) s.whs.add(r.WhsCode);
+    }
+    const skus = Array.from(bySku.values());
+    const container = $('#searchResults');
+    if(!skus.length){
+      const isEmpty = DATA.length === 0;
+      container.innerHTML = '<div class="empty">'+
+        '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>'+
+        '<h3>'+(isEmpty?'Aún no hay datos':'Sin resultados')+'</h3>'+
+        '<p>'+(isEmpty?'Pega tu export SAP en la Hoja "STOCK" y toca recargar':'Ajusta filtros o búsqueda')+'</p>'+
+        '</div>';
+      return;
+    }
+    container.innerHTML = skus.slice(0, 100).map(renderSkuCard).join('') +
+      (skus.length > 100 ? '<div class="empty" style="padding:20px"><p>Mostrando 100 de '+skus.length+'. Refina la búsqueda.</p></div>' : '');
+  }
+
+  function renderSkuCard(s){
+    // Filtrar solo lotes de bodega principal para el FIFO
+    const homeLots = sortFEFO(s.lots.filter(l => String(l.WhsCode).padStart(2,'0') === HOME_WHS || String(l.WhsCode) === HOME_WHS));
+    const homeTotal = homeLots.reduce((a,l)=>a+(Number(l.Quantity)||0),0);
+    const otherTotal = s.totalQty - homeTotal;
+    const winner = homeLots[0];
+    const hasStock = !!winner;
+    const hasLot = hasStock && winner.BatchNum && String(winner.BatchNum).trim() !== '';
+
+    let worst = null;
+    for(const l of homeLots){
+      const st = expStatus(parseDate(l.ExpDate));
+      if(st.days === null) continue;
+      if(!worst || st.days < worst.days) worst = st;
+    }
+
+    const homeLbl = whsName(HOME_WHS) || ('Bod '+HOME_WHS);
+    const lotChip = hasStock
+      ? '<span class="card-lot '+(hasLot?'':'missing')+'">🎯 Lote '+HOME_WHS+' '+escapeHtml(homeLbl)+': '+(hasLot?escapeHtml(winner.BatchNum):'sin asignar')+'</span>'
+      : '<span class="card-lot missing">⚠ Sin stock en '+escapeHtml(homeLbl)+'</span>';
+
+    const otherInfo = otherTotal > 0 ? '<span class="badge">+'+fmt(Math.round(otherTotal))+' en otras bod</span>' : '';
+
+    const uom = uomShort(s.lots[0] && s.lots[0].UoM);
+    return '<div class="card" onclick="openDetail(\''+escapeAttr(s.ItemCode)+'\')">'+
+      '<div class="card-head"><div style="min-width:0"><span class="code">'+escapeHtml(s.ItemCode)+'</span>'+
+      '<div class="card-name">'+escapeHtml(s.ItemName)+'</div></div>'+
+      '<div class="qty" style="'+(hasStock?'':'opacity:.5')+'">'+fmt(Math.round(homeTotal))+'<span class="unit">'+uom+' '+escapeHtml(homeLbl)+'</span></div></div>'+
+      '<div class="card-meta" style="margin-top:10px">'+lotChip+'</div>'+
+      '<div class="card-meta">'+
+        '<span class="badge count">'+homeLots.length+' lote'+(homeLots.length!==1?'s':'')+'</span>'+
+        (worst ? '<span class="badge '+worst.cls+'">'+worst.label+'</span>' : '')+
+        otherInfo+
+      '</div></div>';
+  }
+
+  // ---------- Detail with FIFO recommendation on top ----------
+  // FIFO real: ordena por fecha de ingreso (InDate) ascendente — primero lo que entró, primero sale.
+  // Si no hay InDate, cae a ExpDate como respaldo.
+  function sortFIFO(lots){
+    return lots.slice().sort((a,b) => {
+      const da = parseDate(a.InDate) || parseDate(a.ExpDate);
+      const db = parseDate(b.InDate) || parseDate(b.ExpDate);
+      if(!da && !db) return 0;
+      if(!da) return 1;
+      if(!db) return -1;
+      return da - db;
+    });
+  }
+  // Alias por compatibilidad
+  const sortFEFO = sortFIFO;
+
+  // Resumen tipo tabla: rank | ingreso | lote | caducidad | unidades
+  function renderFifoSummary(lots, total){
+    if(!lots.length) return '';
+    const uom = uomShort(lots[0].UoM);
+    const rowsHtml = lots.map((l, i) => {
+      const rank = i + 1;
+      const rankCls = rank === 1 ? 'top-1' : (rank === 2 ? 'top-2' : (rank === 3 ? 'top-3' : ''));
+      const hasLot = l.BatchNum && String(l.BatchNum).trim() !== '';
+      const expSt = expStatus(parseDate(l.ExpDate));
+      const daysCls = expSt.days === null ? '' :
+        expSt.days < 0 ? 'expired' :
+        expSt.days <= 30 ? 'near' :
+        expSt.days <= 90 ? 'warn' : '';
+      const daysLabel = expSt.days === null ? '' :
+        expSt.days < 0 ? ('venc. hace '+Math.abs(expSt.days)+'d') :
+        (expSt.days+'d restantes');
+      return '<tr class="'+rankCls+'">'+
+        '<td class="rank-cell">'+rank+'</td>'+
+        '<td class="date-cell">'+escapeHtml(l.InDate||'—')+'</td>'+
+        '<td>'+
+          '<div class="'+(hasLot?'lot-cell':'lot-cell missing')+'">'+escapeHtml(hasLot?l.BatchNum:'sin lote')+'</div>'+
+          '<div class="whs-cell">Bod '+escapeHtml(l.WhsCode)+(l.State?' · '+escapeHtml(l.State):'')+'</div>'+
+        '</td>'+
+        '<td class="date-cell">'+escapeHtml(l.ExpDate||'—')+
+          (daysLabel?'<span class="days '+daysCls+'">'+daysLabel+'</span>':'')+
+        '</td>'+
+        '<td class="qty-cell">'+fmt(l.Quantity)+'<span class="u">'+uom+'</span></td>'+
+      '</tr>';
+    }).join('');
+    return '<div class="fifo-summary">'+
+      '<div class="fifo-summary-head">'+
+        '<div class="t">📊 Resumen FIFO · Orden de despacho</div>'+
+        '<div class="totals">'+
+          '<div><div class="lbl">Lotes</div><div class="val">'+lots.length+'</div></div>'+
+          '<div><div class="lbl">Total '+uom+'</div><div class="val" style="color:var(--emerald-2)">'+fmt(Math.round(total))+'</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="overflow-x:auto;max-height:360px;overflow-y:auto"><table class="fifo-table">'+
+        '<thead><tr><th class="num">#</th><th>Ingreso</th><th>Lote · Info</th><th>Caducidad</th><th class="num">'+uom+'</th></tr></thead>'+
+        '<tbody>'+rowsHtml+'</tbody>'+
+      '</table></div>'+
+      '<div class="fifo-summary-foot">'+
+        '<span>Ordenado por fecha de ingreso (el más antiguo primero)</span>'+
+        '<span><strong>'+fmt(Math.round(total))+'</strong> '+uom+' en <strong>'+lots.length+'</strong> lotes</span>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function renderLotRow(l, rank){
+    const st = expStatus(parseDate(l.ExpDate));
+    const rankCls = rank===1 ? 'rank-1' : (rank===2 ? 'rank-2' : (rank===3 ? 'rank-3' : ''));
+    const hasL = l.BatchNum && String(l.BatchNum).trim() !== '';
+    return '<div class="lot '+rankCls+'">'+
+      '<div class="rank">'+rank+'</div>'+
+      '<div class="lot-info">'+
+        '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:2px">Lote</div>'+
+        '<div class="lot-code" style="font-size:16px;color:'+(hasL?'#fff':'var(--amber-2)')+'">'+escapeHtml(hasL?l.BatchNum:'⚠ sin lote')+'</div>'+
+        '<div class="lot-sub" style="margin-top:4px">'+
+          '<span>Bod <strong>'+escapeHtml(whsLabel(l.WhsCode))+'</strong></span>'+
+          '<span>Ing <strong>'+escapeHtml(l.InDate||'—')+'</strong></span>'+
+          '<span>Cad <strong>'+escapeHtml(l.ExpDate||'—')+'</strong></span>'+
+        '</div>'+
+        '<div class="lot-exp"><span class="badge '+st.cls+'">'+st.label+'</span>'+(l.State?' '+stateBadge(l.State):'')+'</div>'+
+      '</div>'+
+      '<div class="lot-qty"><div class="lot-qty-num">'+fmt(l.Quantity)+'</div><div class="lot-qty-unit">'+uomShort(l.UoM)+'</div></div>'+
+    '</div>';
+  }
+
+  window.openDetail = function(sku){
+    const lots = DATA.filter(r => r.ItemCode === sku);
+    if(!lots.length) return;
+    const total = lots.reduce((a,l)=>a+(Number(l.Quantity)||0), 0);
+    const name = lots[0].ItemName || '';
+    const detailUom = uomShort(lots[0].UoM);
+
+    const isHome = w => String(w).padStart(2,'0') === HOME_WHS || String(w) === HOME_WHS;
+    // Separar lotes por bodega principal vs otras
+    const homeLots = sortFEFO(lots.filter(l => isHome(l.WhsCode)));
+    const otherLots = sortFEFO(lots.filter(l => !isHome(l.WhsCode)));
+    const homeTotal = homeLots.reduce((a,l)=>a+(Number(l.Quantity)||0),0);
+
+    // Distribución por bodega (informativo)
+    const byWhs = new Map();
+    for(const l of lots){byWhs.set(l.WhsCode, (byWhs.get(l.WhsCode)||0) + (Number(l.Quantity)||0))}
+    const whsArr = Array.from(byWhs.entries()).sort((a,b)=>b[1]-a[1]);
+    const colors = ['#10B981','#06B6D4','#8B5CF6','#F59E0B','#EF4444','#EC4899','#14B8A6','#EAB308'];
+    const colorFor = whs => isHome(whs) ? '#10B981' : colors[(whsArr.findIndex(e=>e[0]===whs)+1) % colors.length];
+    const distBar = whsArr.map(e => '<div class="dist-seg" style="width:'+(e[1]/total*100).toFixed(1)+'%;background:'+colorFor(e[0])+'"></div>').join('');
+    const distLegend = whsArr.map(e => {
+      const home = isHome(e[0]);
+      return '<span><i style="background:'+colorFor(e[0])+'"></i>'+escapeHtml(whsLabel(e[0]))+(home?' ★':'')+': '+fmt(Math.round(e[1]))+'</span>';
+    }).join('');
+
+    // FIFO banner: solo bodega principal
+    let fifoBanner = '';
+    if(homeLots.length){
+      const winner = homeLots[0];
+      const winnerSt = expStatus(parseDate(winner.ExpDate));
+      const hasLot = winner.BatchNum && String(winner.BatchNum).trim() !== '';
+      fifoBanner =
+        '<div class="fifo-panel">'+
+          '<div class="fifo-label"><span class="pulse"></span>🎯 DESPACHAR PRIMERO · '+escapeHtml(whsLabel(HOME_WHS))+'</div>'+
+          '<div class="fifo-lot-box '+(hasLot?'':'missing')+'">'+
+            '<div class="lot-tag">'+(hasLot?'Lote N°':'⚠ Sin lote en SAP')+'</div>'+
+            '<div class="lot-num">'+escapeHtml(hasLot?winner.BatchNum:'Revisa la columna BatchNum')+'</div>'+
+          '</div>'+
+          '<div class="fifo-details">'+
+            '<div>Bodega<strong>'+escapeHtml(whsLabel(winner.WhsCode))+'</strong></div>'+
+            '<div>Disponible<strong>'+fmt(winner.Quantity)+' '+detailUom+'</strong></div>'+
+            '<div>Caducidad<strong>'+escapeHtml(winner.ExpDate||'—')+'</strong></div>'+
+            '<div>Estado<strong style="font-size:12px">'+(winnerSt.label)+'</strong></div>'+
+          '</div>'+
+        '</div>';
+    } else {
+      fifoBanner =
+        '<div class="fifo-panel" style="border-color:var(--amber);background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));box-shadow:none">'+
+          '<div class="fifo-label" style="color:var(--amber-2)"><span class="pulse" style="background:var(--amber)"></span>⚠ SIN STOCK EN '+escapeHtml(whsLabel(HOME_WHS)).toUpperCase()+'</div>'+
+          '<div style="font-size:13px;color:var(--text);margin-top:6px">Este SKU no tiene stock en tu bodega. Revisa transferencias o consulta las otras bodegas abajo.</div>'+
+        '</div>';
+    }
+
+    // Lotes bodega principal
+    const homeLotsHtml = homeLots.length
+      ? homeLots.map((l,i) => renderLotRow(l, i+1)).join('')
+      : '<div class="empty" style="padding:20px"><p>Sin lotes en Bodega '+HOME_WHS+'</p></div>';
+
+    // Lotes otras bodegas (informativo)
+    const otherLotsHtml = otherLots.length
+      ? '<div class="section-title" style="margin-top:22px;color:var(--text-mute)">📦 Stock en otras bodegas (solo informativo)</div>'+
+        otherLots.map(l => {
+          const st = expStatus(parseDate(l.ExpDate));
+          const hasL = l.BatchNum && String(l.BatchNum).trim() !== '';
+          return '<div class="lot" style="opacity:.7;border-left-color:var(--border-2)">'+
+            '<div class="rank" style="background:var(--surface-3);color:var(--text-dim)">·</div>'+
+            '<div class="lot-info">'+
+              '<div style="font-size:10px;color:var(--text-mute);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:2px">Lote</div>'+
+              '<div class="lot-code" style="font-size:14px;color:'+(hasL?'var(--text-dim)':'var(--amber-2)')+'">'+escapeHtml(hasL?l.BatchNum:'⚠ sin lote')+'</div>'+
+              '<div class="lot-sub" style="margin-top:4px"><span>Bod <strong>'+escapeHtml(whsLabel(l.WhsCode))+'</strong></span><span>Cad <strong>'+escapeHtml(l.ExpDate||'—')+'</strong></span></div>'+
+              '<div class="lot-exp"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
+            '</div>'+
+            '<div class="lot-qty"><div class="lot-qty-num" style="color:var(--text-dim)">'+fmt(l.Quantity)+'</div><div class="lot-qty-unit">'+uomShort(l.UoM)+'</div></div>'+
+          '</div>';
+        }).join('')
+      : '';
+
+    $('#modalCard').innerHTML =
+      '<div class="modal-drag"></div>'+
+      '<button class="modal-close" onclick="closeDetail()">✕</button>'+
+      '<div class="detail-head">'+
+        '<span class="code">'+escapeHtml(sku)+'</span>'+
+        '<h3>'+escapeHtml(name)+'</h3>'+
+        '<div class="stat-row">'+
+          '<div class="stat"><div class="label">En '+escapeHtml(whsName(HOME_WHS))+' ★</div><div class="value" style="color:var(--emerald-2)">'+fmt(Math.round(homeTotal))+'<span class="unit">'+detailUom+'</span></div></div>'+
+          '<div class="stat"><div class="label">Otras bodegas</div><div class="value" style="color:var(--text-dim);font-size:20px">'+fmt(Math.round(total - homeTotal))+'<span class="unit">'+detailUom+'</span></div></div>'+
+          '<div class="stat"><div class="label">Total lotes</div><div class="value" style="font-size:20px">'+lots.length+'</div></div>'+
+        '</div>'+
+        '<div class="dist-bar">'+distBar+'</div>'+
+        '<div class="dist-legend">'+distLegend+'</div>'+
+      '</div>'+
+      fifoBanner+
+      renderFifoSummary(homeLots, homeTotal)+
+      '<div class="section-title">📋 Detalle de lotes en '+escapeHtml(whsLabel(HOME_WHS))+' (orden FIFO — primero lo que ingresó)</div>'+
+      homeLotsHtml+
+      otherLotsHtml;
+    $('#modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeDetail = function(){
+    $('#modal').classList.remove('show');
+    document.body.style.overflow = '';
+  };
+  $('#modal').addEventListener('click', e => {if(e.target.id==='modal') closeDetail()});
+
+  // ---------- FIFO global list ----------
+  let fifoFilter = '';
+  function renderFifo(){
+    // Solo lotes de bodega principal
+    const isHome = w => String(w).padStart(2,'0') === HOME_WHS || String(w) === HOME_WHS;
+    const homeData = DATA.filter(r => isHome(r.WhsCode));
+    const bySku = new Map();
+    for(const r of homeData){
+      if(!r.ItemCode) continue;
+      let s = bySku.get(r.ItemCode);
+      if(!s){s = {ItemCode:r.ItemCode, ItemName:r.ItemName, lots:[], totalQty:0}; bySku.set(r.ItemCode, s)}
+      s.lots.push(r); s.totalQty += Number(r.Quantity)||0;
+    }
+    const q = fifoFilter.trim().toLowerCase();
+    let list = Array.from(bySku.values());
+    if(q) list = list.filter(s => s.ItemCode.toLowerCase().includes(q) || (s.ItemName||'').toLowerCase().includes(q));
+    // Sort SKUs by their earliest lot's exp date
+    list.forEach(s => {s.sorted = sortFEFO(s.lots)});
+    list.sort((a,b)=>{
+      const da = parseDate(a.sorted[0].ExpDate), db = parseDate(b.sorted[0].ExpDate);
+      if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
+      return da - db;
+    });
+    const cont = $('#fifoList');
+    if(!list.length){cont.innerHTML = '<div class="empty"><p>Sin resultados</p></div>'; return}
+    cont.innerHTML = list.slice(0, 60).map(s => {
+      const w = s.sorted[0];
+      const st = expStatus(parseDate(w.ExpDate));
+      const hasLot = w.BatchNum && String(w.BatchNum).trim() !== '';
+      const fifoUom = uomShort(s.lots[0] && s.lots[0].UoM);
+      return '<div class="card" onclick="openDetail(\''+escapeAttr(s.ItemCode)+'\')">'+
+        '<div class="card-head"><div style="min-width:0"><span class="code">'+escapeHtml(s.ItemCode)+'</span>'+
+        '<div class="card-name">'+escapeHtml(s.ItemName)+'</div></div>'+
+        '<div class="qty">'+fmt(Math.round(s.totalQty))+'<span class="unit">'+fifoUom+'</span></div></div>'+
+        '<div class="fifo-panel" style="margin-top:12px;margin-bottom:0;padding:12px">'+
+          '<div class="fifo-label" style="margin-bottom:4px">🎯 Despachar lote</div>'+
+          '<div class="fifo-lot-box '+(hasLot?'':'missing')+'" style="padding:10px 12px;margin:4px 0 8px">'+
+            '<div class="lot-tag">'+(hasLot?'Lote N°':'⚠ Sin lote')+'</div>'+
+            '<div class="lot-num" style="font-size:22px">'+escapeHtml(hasLot?w.BatchNum:'no asignado')+'</div>'+
+          '</div>'+
+          '<div class="fifo-details" style="margin-top:4px">'+
+            '<div>Bod<strong>'+escapeHtml(whsLabel(w.WhsCode))+'</strong></div>'+
+            '<div>Cant<strong>'+fmt(w.Quantity)+'</strong></div>'+
+            '<div>Cad<strong>'+escapeHtml(w.ExpDate||'—')+'</strong></div>'+
+            '<div>Estado<strong style="font-size:11px">'+st.label+'</strong></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('') + (list.length>60 ? '<div class="empty" style="padding:20px"><p>Mostrando 60 de '+list.length+'</p></div>' : '');
+  }
+
+  // ---------- Update view ----------
+  function updateDataInfo(){
+    const t = META.updatedAt ? new Date(META.updatedAt) : null;
+    $('#dataInfo').innerHTML = '<strong>'+fmt(META.count)+'</strong> lotes cargados<br>'+
+      (t ? 'Última lectura: '+t.toLocaleString('es-EC') : 'Sin datos');
+  }
+  function updateStatus(){
+    const dot = $('#statusDot');
+    if(!META.updatedAt || META.count === 0){dot.className = 'dot error'; return}
+    const hours = (Date.now() - new Date(META.updatedAt).getTime())/3600000;
+    dot.className = hours > 24 ? 'dot stale' : 'dot';
+  }
+
+  window.openSheet = function(){
+    const url = SHEET_URL || 'about:blank';
+    window.open(url, '_blank');
+  };
+
+  // ---------- Navigation ----------
+  function switchView(name){
+    $$('.view').forEach(v => v.classList.remove('active'));
+    $$('.bottom-nav button').forEach(b => b.classList.remove('active'));
+    $('#view-'+name).classList.add('active');
+    $$('.bottom-nav button').forEach(b => {if(b.dataset.view===name) b.classList.add('active')});
+    window.scrollTo({top:0, behavior:'instant'});
+    if(name !== 'scan') stopCamera();
+    else {
+      if(!('BarcodeDetector' in window)) getZxingDetector().catch(() => {});
+      if(!IN_APPS_SCRIPT) startCamera();
+    }
+  }
+
+  // ---------- Events ----------
+  $$('.bottom-nav button').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+  $('#refreshBtn').addEventListener('click', () => {
+    $('#refreshBtn').classList.add('spinning');
+    loadData(true);
+    setTimeout(() => $('#refreshBtn').classList.remove('spinning'), 1200);
+  });
+  $('#statusBtn').addEventListener('click', () => switchView('update'));
+  $('#forceRefreshBtn').addEventListener('click', () => {loadData(true); toast('Recargando…', 'ok')});
+
+  // ===== Upload de Unidades de Medida =====
+  const uomStatus = $('#uomStatus');
+  function uomSt(msg, color){ uomStatus.style.display='block'; uomStatus.innerHTML = msg; if(color) uomStatus.style.color = color; }
+
+  $('#uomFileInput').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){ uomSt('❌ Librería XLSX no cargó', 'var(--rose-2)'); return }
+    uomSt('📖 Leyendo <strong>'+escapeHtml(file.name)+'</strong>…', 'var(--text-dim)');
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+        if(!aoa.length){ uomSt('❌ Hoja vacía', 'var(--rose-2)'); return }
+        const headers = aoa[0].map(h => String(h||'').toLowerCase().trim());
+        const skuIdx = headers.findIndex(h => /sku|itemcode|c[oó]digo/.test(h));
+        const nameIdx = headers.findIndex(h => /descripci|nombre|art[ií]culo/.test(h));
+        const uomIdx = headers.findIndex(h => /unidad|uom|medida/.test(h));
+        if(skuIdx < 0 || uomIdx < 0){
+          uomSt('❌ No se encontraron columnas <strong>SKU</strong> o <strong>Unidad de medida</strong>. Encabezados: '+headers.join(', '), 'var(--rose-2)');
+          return;
+        }
+        const rows = [];
+        for(let i=1;i<aoa.length;i++){
+          const r = aoa[i];
+          if(!r || !r[skuIdx]) continue;
+          rows.push({
+            sku: String(r[skuIdx]).trim(),
+            name: nameIdx >= 0 ? String(r[nameIdx]||'').trim() : '',
+            uom: String(r[uomIdx]||'').trim().toUpperCase()
+          });
+        }
+        uomSt('📤 Subiendo <strong>'+fmt(rows.length)+'</strong> SKUs con unidad…', 'var(--text-dim)');
+        google.script.run
+          .withSuccessHandler(res => {
+            uomSt('✅ <strong>'+fmt(res.count)+' unidades de medida</strong> guardadas. Recargando stock…', 'var(--emerald-2)');
+            toast('✓ '+fmt(res.count)+' unidades cargadas', 'ok');
+            $('#uomFileInput').value = '';
+            loadData(true);
+            setTimeout(()=> uomStatus.style.display='none', 3000);
+          })
+          .withFailureHandler(err => uomSt('❌ Error: '+(err.message||err), 'var(--rose-2)'))
+          .writeUom(rows);
+      }catch(err){ uomSt('❌ Error: '+err.message, 'var(--rose-2)') }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ===== Eliminar todos los datos =====
+  $('#clearAllBtn').addEventListener('click', () => {
+    if(!confirm('⚠ ¿Eliminar TODOS los datos del stock?\n\nSe borrarán las '+fmt(META.count)+' filas actuales de la hoja. Esta acción no se puede deshacer.')) return;
+    const status = $('#clearStatus');
+    status.style.display = 'block';
+    status.innerHTML = '🗑 Eliminando…';
+    status.style.color = 'var(--text-dim)';
+    $('#clearAllBtn').disabled = true;
+    google.script.run
+      .withSuccessHandler(res => {
+        status.innerHTML = '✅ Datos eliminados. La hoja quedó lista para nueva carga.';
+        status.style.color = 'var(--emerald-2)';
+        $('#clearAllBtn').disabled = false;
+        toast('Datos eliminados', 'ok');
+        loadData(true);
+      })
+      .withFailureHandler(err => {
+        status.innerHTML = '❌ Error: '+(err.message||err);
+        status.style.color = 'var(--rose-2)';
+        $('#clearAllBtn').disabled = false;
+      })
+      .clearStock();
+  });
+
+  // ===== Upload Excel =====
+  const uploadStatus = $('#uploadStatus');
+  function uStatus(msg, color){
+    uploadStatus.style.display = 'block';
+    uploadStatus.innerHTML = msg;
+    if(color) uploadStatus.style.color = color;
+  }
+  function mapHeaderToKey(h){
+    const k = String(h||'').toLowerCase().trim();
+    if(/^estado/.test(k) || /estado.*lote/.test(k)) return 'State';
+    if(/^itemcode$|^sku$|c[oó]digo\s*sap/.test(k)) return 'ItemCode';
+    if(/^batchnum$|^lote$|^batch$|nro\.?\s*lote|n[°º\.]?\s*lote/.test(k)) return 'BatchNum';
+    if(/^whscode$|bodega|almac[eé]n/.test(k)) return 'WhsCode';
+    if(/^itemname$|descripci|nombre/.test(k)) return 'ItemName';
+    if(/^quantity$|cantidad|^stock$/.test(k)) return 'Quantity';
+    if(/^indate$|f[\.\s]?ingreso|fecha.*ingreso/.test(k)) return 'InDate';
+    if(/^expdate$|caducidad|vencim|fecha.*venc/.test(k)) return 'ExpDate';
+    if(/^empresa$/.test(k)) return 'Empresa';
+    if(/ref_?cruzada|cruzada/.test(k)) return 'U_ENV_REF_CRUZADA';
+    return null;
+  }
+  function excelDateToISO(v){
+    if(v instanceof Date) {
+      const y=v.getFullYear(), m=String(v.getMonth()+1).padStart(2,'0'), d=String(v.getDate()).padStart(2,'0');
+      return y+'-'+m+'-'+d;
+    }
+    if(typeof v === 'number' && v > 20000 && v < 80000){
+      // Excel serial date
+      const date = new Date(Math.round((v - 25569) * 86400 * 1000));
+      const y=date.getUTCFullYear(), m=String(date.getUTCMonth()+1).padStart(2,'0'), d=String(date.getUTCDate()).padStart(2,'0');
+      return y+'-'+m+'-'+d;
+    }
+    if(typeof v === 'string'){
+      const s = v.trim();
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+      return s;
+    }
+    return v;
+  }
+
+  $('#fileInput').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){
+      uStatus('❌ La librería XLSX no cargó. Revisa tu conexión y recarga.', 'var(--rose-2)');
+      return;
+    }
+    uStatus('📖 Leyendo <strong>'+escapeHtml(file.name)+'</strong>…', 'var(--text-dim)');
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, {type:'array', cellDates:true});
+        // Buscar la hoja con más datos (por si el xlsx tiene varias)
+        let bestSheet = wb.SheetNames[0], bestRows = 0;
+        wb.SheetNames.forEach(n => {
+          const range = XLSX.utils.decode_range(wb.Sheets[n]['!ref']||'A1');
+          const rows = range.e.r - range.s.r;
+          if(rows > bestRows){bestRows = rows; bestSheet = n}
+        });
+        const ws = wb.Sheets[bestSheet];
+        const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+        if(!aoa.length){uStatus('❌ Hoja vacía', 'var(--rose-2)'); return}
+
+        const headers = aoa[0].map(h => String(h||'').trim());
+        const keys = headers.map(mapHeaderToKey);
+        if(!keys.includes('ItemCode')){
+          uStatus('❌ No se encontró columna <strong>ItemCode/SKU</strong>. Encabezados detectados: '+headers.join(', '), 'var(--rose-2)');
+          return;
+        }
+        const rows = [];
+        for(let i=1;i<aoa.length;i++){
+          const row = aoa[i];
+          if(!row || !row.length) continue;
+          const obj = {};
+          headers.forEach((h, ci) => {
+            const key = keys[ci];
+            if(!key) return;
+            let v = row[ci];
+            if(key === 'InDate' || key === 'ExpDate') v = excelDateToISO(v);
+            else if(key === 'Quantity'){
+              const n = parseFloat(String(v).replace(/\./g,'').replace(',','.'));
+              v = isNaN(n) ? 0 : n;
+            } else if(v !== null && v !== undefined) v = String(v);
+            obj[key] = v;
+          });
+          if(obj.ItemCode) rows.push(obj);
+        }
+
+        uStatus('📤 Subiendo <strong>'+fmt(rows.length)+'</strong> filas a Google Sheets…', 'var(--text-dim)');
+
+        google.script.run
+          .withSuccessHandler(res => {
+            uStatus('✅ <strong>'+fmt(res.count)+' filas</strong> cargadas de "'+escapeHtml(bestSheet)+'". Refrescando…', 'var(--emerald-2)');
+            toast('✓ Excel cargado: '+fmt(res.count)+' filas', 'ok');
+            $('#fileInput').value = '';
+            loadData(true);
+            setTimeout(() => { uploadStatus.style.display='none'; switchView('dash'); }, 2000);
+          })
+          .withFailureHandler(err => {
+            uStatus('❌ Error al subir: '+(err.message||err), 'var(--rose-2)');
+            toast('Error: '+(err.message||err), 'error');
+          })
+          .writeStock(rows);
+      }catch(err){
+        uStatus('❌ Error leyendo el archivo: '+err.message, 'var(--rose-2)');
+      }
+    };
+    reader.onerror = () => uStatus('❌ No se pudo leer el archivo', 'var(--rose-2)');
+    reader.readAsArrayBuffer(file);
+  });
+  let searchTimer = null;
+  $('#searchInput').addEventListener('input', e => {
+    filterState.q = e.target.value;
+    $('#searchRow').classList.toggle('has-value', !!e.target.value);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 150);
+  });
+  $('#searchInput').addEventListener('keydown', e => {
+    if(e.key !== 'Enter') return;
+    const v = e.target.value.trim();
+    if(!v) return;
+    const p = parseGS1(v);
+    const exact = DATA.find(r => String(r.ItemCode).toUpperCase() === v.toUpperCase() || String(r.BatchNum).trim() === v);
+    if(p.isGS1 || exact){
+      e.preventDefault();
+      e.target.blur();
+      handleScan(v);
+    }
+  });
+  $('#clearSearchBtn').addEventListener('click', () => {
+    $('#searchInput').value = '';
+    filterState.q = '';
+    $('#searchRow').classList.remove('has-value');
+    runSearch();
+  });
+  $('#filterChips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    const k = b.dataset.k, v = b.dataset.v;
+    filterState[k] = filterState[k] === v ? null : v;
+    renderFilterChips(); runSearch();
+  });
+  $('#fifoSearch').addEventListener('input', e => {fifoFilter = e.target.value; renderFifo()});
+
+  // ===================== ESCÁNER GS1-128 =====================
+  // Etiqueta: (21) SKU · (17) caducidad AAMMDD · (10) lote
+  function knownSkuPrefix(str){
+    const up = String(str).toUpperCase();
+    for(const k of SKU_LIST){ if(up.startsWith(k)) return k.length; }
+    return 0;
+  }
+  function parseGS1(raw){
+    const s = String(raw || '').replace(/[\r\n\t]/g, '').trim().replace(/^\][A-Za-z]\d/, '');
+    const out = {sku:null, lot:null, exp:null, isGS1:false};
+    const set = (ai, v) => {
+      v = String(v || '').replace(/\x1D/g, '').trim();
+      if(!v) return;
+      if(ai === '21'){ out.sku = v.toUpperCase(); out.isGS1 = true; }
+      else if(ai === '10'){ out.lot = v; out.isGS1 = true; }
+      else if(ai === '17' && /^\d{6}$/.test(v)){
+        out.exp = '20'+v.slice(0,2)+'-'+v.slice(2,4)+'-'+(v.slice(4,6) === '00' ? '01' : v.slice(4,6));
+        out.isGS1 = true;
+      }
+    };
+    if(/\(\d{2,4}\)/.test(s)){
+      const re = /\((\d{2,4})\)([^(]*)/g; let m;
+      while((m = re.exec(s))) set(m[1], m[2]);
+      return out;
+    }
+    if(s.length < 8 || !/^(21|10|17)/.test(s)) return out;
+    const GS = '\x1D';
+    let i = 0;
+    while(i < s.length){
+      if(s[i] === GS){ i++; continue; }
+      const ai = s.substr(i, 2);
+      if(ai === '17' || ai === '11' || ai === '13' || ai === '15'){ set(ai, s.substr(i+2, 6)); i += 8; continue; }
+      if(ai === '01' || ai === '02'){ i += 16; continue; }
+      if(ai === '21' || ai === '10'){
+        const start = i + 2;
+        const g = s.indexOf(GS, start);
+        if(g >= 0){ set(ai, s.substring(start, g)); i = g + 1; continue; }
+        const rest = s.substring(start);
+        if(ai === '21'){
+          // Sin separador FNC1: se deduce el largo del SKU
+          let len = knownSkuPrefix(rest);
+          if(!len){ const m = rest.match(/^[A-Z]{7}\d{4}(?=17\d{6}|10)/i); if(m) len = m[0].length; }
+          if(!len){ const m = rest.match(/^(.+?)(?=17\d{6})/); if(m) len = m[1].length; }
+          if(len){ set('21', rest.slice(0, len)); i = start + len; continue; }
+        }
+        set(ai, rest);
+        break;
+      }
+      break;
+    }
+    return out;
+  }
+
+  function setHint(msg, err){
+    const h = $('#scanHint');
+    h.textContent = msg;
+    h.classList.toggle('err', !!err);
+  }
+
+  let actx = null;
+  function feedback(ok){
+    try{
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square'; o.frequency.value = ok ? 1760 : 280; g.gain.value = 0.05;
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + (ok ? 0.09 : 0.28));
+    }catch(e){}
+    try{ if(navigator.vibrate) navigator.vibrate(ok ? 60 : [90, 60, 90]); }catch(e){}
+    const st = $('#scanStage');
+    st.classList.remove('hit', 'miss'); void st.offsetWidth;
+    st.classList.add(ok ? 'hit' : 'miss');
+    setTimeout(() => st.classList.remove('hit', 'miss'), 700);
+  }
+
+  // Igual que digitar el SKU en Consultar: muestra el resultado y abre su detalle FIFO
+  function showSku(sku){
+    filterState.q = sku; filterState.whs = null; filterState.state = null; filterState.exp = null;
+    $('#searchInput').value = sku;
+    $('#searchRow').classList.add('has-value');
+    switchView('search');
+    renderFilterChips();
+    runSearch();
+    openDetail(sku);
+  }
+
+  function resolveSku(raw){
+    const code = String(raw || '').replace(/[\r\n\t]/g, '').trim();
+    const up = code.toUpperCase();
+    let sku = null, p = {isGS1:false};
+    // 1) Coincidencia exacta con SKU o lote
+    let r = DATA.find(x => String(x.ItemCode).toUpperCase() === up);
+    if(r) sku = r.ItemCode;
+    if(!sku){ r = DATA.find(x => String(x.BatchNum).trim() === code); if(r) sku = r.ItemCode; }
+    // 2) Etiqueta GS1-128
+    if(!sku){
+      p = parseGS1(code);
+      if(p.isGS1){
+        if(p.sku){ r = DATA.find(x => String(x.ItemCode).toUpperCase() === p.sku); if(r) sku = r.ItemCode; }
+        if(!sku && p.lot){ r = DATA.find(x => String(x.BatchNum).trim() === p.lot); if(r) sku = r.ItemCode; }
+      } else if(/^\d{8,14}$/.test(code)){
+        // 3) EAN del producto (viene dentro de la descripción)
+        r = DATA.find(x => String(x.ItemName).includes(code));
+        if(r) sku = r.ItemCode;
+      }
+    }
+    return {code, sku, p};
+  }
+
+  function handleScan(raw){
+    const {code, sku, p} = resolveSku(raw);
+    if(!code) return false;
+    if(sku){
+      feedback(true);
+      showSku(sku);
+      return true;
+    }
+    feedback(false);
+    const label = (p.sku || code) + (p.lot ? ' · lote ' + p.lot : '');
+    setHint('✕ ' + label + ' — no hay stock cargado', true);
+    toast('Sin stock: ' + label, 'error');
+    return false;
+  }
+
+  // ----- Motor de lectura: lector nativo del celular (Chrome/Edge Android) o ZXing-C++ de respaldo -----
+  const SCAN_FORMATS = ['code_128','ean_13','ean_8','code_39','itf','upc_a','qr_code','data_matrix'];
+  const IN_APPS_SCRIPT = /googleusercontent\.com$/.test(location.hostname);
+  let zxingDetector = null, nativeDetector = null;
+  function getZxingDetector(){
+    if(!zxingDetector){
+      zxingDetector = import('https://cdn.jsdelivr.net/npm/barcode-detector@2.3.1/dist/es/pure.min.js')
+        .then(m => new m.BarcodeDetector({formats: SCAN_FORMATS}))
+        .catch(e => { zxingDetector = null; throw e; });
+    }
+    return zxingDetector;
+  }
+  async function getNativeDetector(){
+    if(nativeDetector !== null) return nativeDetector;
+    nativeDetector = false;
+    if('BarcodeDetector' in window){
+      try{
+        const supported = await BarcodeDetector.getSupportedFormats();
+        if(supported.includes('code_128')) nativeDetector = new BarcodeDetector({formats: SCAN_FORMATS.filter(x => supported.includes(x))});
+      }catch(e){}
+    }
+    return nativeDetector;
+  }
+  async function detectCodes(detector, source){
+    const found = await detector.detect(source);
+    found.sort((a, b) => (b.format === 'code_128') - (a.format === 'code_128'));
+    return found.map(x => x.rawValue);
+  }
+  const pickCode = codes => codes.find(c => resolveSku(c).sku) || codes[0];
+
+  // ----- Escáner en vivo con láser -----
+  let camStream = null, camOn = false, camBusy = false, wantCam = false, torchOn = false;
+  let liveDetector = null, scanTimer = null, lastCode = '', lastAt = 0;
+  function setCamUi(){
+    const btn = $('#camToggle');
+    btn.classList.toggle('on', camOn);
+    btn.querySelector('.t').textContent = camOn ? 'Detener escáner' : 'Iniciar escáner';
+    $('#scanStage').style.display = camOn ? 'block' : 'none';
+    if(!camOn){ torchOn = false; $('#torchBtn').style.display = 'none'; $('#torchBtn').classList.remove('on'); }
+  }
+  function stopStream(){
+    clearTimeout(scanTimer);
+    if(camStream){ camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    $('#camVideo').srcObject = null;
+  }
+  async function scanLoop(){
+    if(!camOn) return;
+    const v = $('#camVideo');
+    try{
+      if(v.readyState >= 2){
+        const codes = await detectCodes(liveDetector, v);
+        if(codes.length && camOn){
+          const code = pickCode(codes), now = Date.now();
+          if(!(code === lastCode && now - lastAt < 2500)){
+            lastCode = code; lastAt = now;
+            handleScan(code);
+          }
+        }
+      }
+    }catch(e){}
+    if(camOn) scanTimer = setTimeout(scanLoop, 60);
+  }
+  async function startCamera(){
+    wantCam = true;
+    if(camOn || camBusy) return;
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setHint('Este navegador no permite cámara en vivo. Usa 📸 Leer desde una foto.', true);
+      return;
+    }
+    camBusy = true;
+    setHint('Abriendo cámara…', false);
+    try{
+      liveDetector = (await getNativeDetector()) || (await getZxingDetector());
+      camStream = await navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}});
+      const track = camStream.getVideoTracks()[0];
+      try{ await track.applyConstraints({advanced: [{focusMode: 'continuous'}]}); }catch(e){}
+      const v = $('#camVideo');
+      v.srcObject = camStream;
+      await v.play();
+      camOn = true;
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      $('#torchBtn').style.display = caps.torch ? 'flex' : 'none';
+      setHint('Pasa el láser sobre el código de barras', false);
+    }catch(err){
+      stopStream();
+      camOn = false;
+      if(IN_APPS_SCRIPT) setHint('Google Apps Script no permite la cámara en vivo. Abre la versión web de GitHub o usa 📸 Leer desde una foto.', true);
+      else if(err && err.name === 'NotAllowedError') setHint('Permiso de cámara bloqueado: toca el 🔒 junto a la dirección → Permisos → Cámara → Permitir.', true);
+      else setHint('No se pudo abrir la cámara. Usa 📸 Leer desde una foto.', true);
+    }
+    camBusy = false;
+    if(camOn && !wantCam){ stopStream(); camOn = false; }
+    setCamUi();
+    if(camOn) scanLoop();
+  }
+  function stopCamera(){
+    wantCam = false;
+    if(camBusy || !camOn) return;
+    stopStream();
+    camOn = false;
+    setCamUi();
+  }
+  $('#camToggle').addEventListener('click', () => { camOn ? stopCamera() : startCamera(); });
+  $('#torchBtn').addEventListener('click', async () => {
+    if(!camStream) return;
+    torchOn = !torchOn;
+    try{
+      await camStream.getVideoTracks()[0].applyConstraints({advanced: [{torch: torchOn}]});
+      $('#torchBtn').classList.toggle('on', torchOn);
+    }catch(e){ torchOn = false; }
+  });
+
+  if(IN_APPS_SCRIPT) setHint('La cámara en vivo funciona en la versión web (GitHub). Aquí usa 📸 Leer desde una foto o la pistola.', false);
+
+  // ----- Leer desde una foto (respaldo) -----
+  async function decodePhoto(f){
+    const full = await createImageBitmap(f);
+    const scale = Math.min(1, 1600 / Math.max(full.width, full.height));
+    const sources = [full];
+    if(scale < 1) sources.push(await createImageBitmap(f, {resizeWidth: Math.round(full.width * scale), resizeHeight: Math.round(full.height * scale), resizeQuality: 'high'}));
+    const detectors = [await getNativeDetector()].filter(Boolean);
+    try{ detectors.push(await getZxingDetector()); }catch(e){}
+    for(const d of detectors){
+      for(const s of sources){
+        try{ const codes = await detectCodes(d, s); if(codes.length) return codes; }catch(e){}
+      }
+    }
+    throw new Error('sin código');
+  }
+  $('#photoInput').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!f) return;
+    stopCamera();
+    setHint('Leyendo código…', false);
+    try{
+      const codes = await decodePhoto(f);
+      setHint('Apunta al código de barras en horizontal', false);
+      handleScan(pickCode(codes));
+    }catch(err){
+      feedback(false);
+      setHint('No se detectó el código en la foto. Tómala de cerca, con luz y la etiqueta derecha.', true);
+    }
+  });
+
+  // ----- Pistola lectora (teclado) -----
+  $('#wedgeInput').addEventListener('keydown', e => {
+    if(e.key !== 'Enter') return;
+    e.preventDefault();
+    const v = e.target.value;
+    e.target.value = '';
+    handleScan(v);
+  });
+  // Captura global: la pistola "teclea" muy rápido y termina con Enter, sin necesidad de tocar un campo
+  let wedgeBuf = '', wedgeAt = 0;
+  document.addEventListener('keydown', e => {
+    const t = e.target;
+    if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if(e.ctrlKey || e.altKey || e.metaKey) return;
+    const now = Date.now();
+    if(now - wedgeAt > 100) wedgeBuf = '';
+    wedgeAt = now;
+    if(e.key === 'Enter' || e.key === 'Tab'){
+      if(wedgeBuf.length >= 5){ e.preventDefault(); handleScan(wedgeBuf); }
+      wedgeBuf = '';
+      return;
+    }
+    if(e.key.length === 1) wedgeBuf += e.key;
+  });
+
+  // Aplicar HOME_WHS a textos estáticos
+  const homeShortName = whsName(HOME_WHS) || ('Bod '+HOME_WHS);
+  const fifoTitleEl = document.getElementById('fifoIntroTitle');
+  if(fifoTitleEl) fifoTitleEl.textContent = whsLabel(HOME_WHS) + ' — lote a despachar primero por SKU';
+  document.querySelector('.brand-text .sub').textContent = homeShortName.toUpperCase() + ' · FIFO · Consulta';
+  const alertsTitleEl = document.getElementById('alertsTitle');
+  if(alertsTitleEl) alertsTitleEl.innerHTML = '⚠ Alertas de vencimiento · '+escapeHtml(homeShortName)+' <span class="badge-count" id="alertCount">0</span>';
+
+  // Init
+  loadData(false);
+})();
+</script>
+</body>
+</html>
